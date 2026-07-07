@@ -99,7 +99,7 @@ st.title("🕸️ " + textos.TITULO)
 st.markdown(textos.INTRO)
 
 t_intro, t1, t2, t3, t4 = st.tabs(
-    ["📊 La red", "① Anatomía", "② Actores", "③ Régimen", "④ Interpretación"])
+    ["📊 La red", "① Topología", "② Actores", "③ Régimen", "④ Interpretación"])
 
 # --- pestaña panorámica ---
 with t_intro:

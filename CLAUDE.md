@@ -69,7 +69,7 @@ lib/
 
 ## Los 11 puntos (en `lib/textos.py`)
 
-- **I. Anatomía**: p1 campana vs cola larga (CV) · p2 por qué desconectada ·
+- **I. Topología**: p1 campana vs cola larga (CV) · p2 por qué desconectada ·
   p3 clustering ≈ 0.
 - **II. Actores**: p4 top acumuladores · p5 ¿por qué no hay brokers? (excepción =
   quien compra Y vende) · p6 rankear por #compras vs área vs valor (¡dan actores

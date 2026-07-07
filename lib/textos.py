@@ -42,7 +42,7 @@ guarden cada respuesta con su botón. Pueden volver y editar hasta enviar.
 
 # Cada parte: (clave, título, intro markdown)
 PARTES = {
-    "I": ("Parte I · Anatomía de la red", r"""
+    "I": ("Parte I · Topología de la red", r"""
 Miren la forma global de la red antes de entrar en los actores.
 """),
     "II": ("Parte II · Los actores clave", r"""
