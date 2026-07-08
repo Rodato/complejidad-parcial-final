@@ -62,15 +62,16 @@ PUNTOS = {
     "p1": ("I", "1. ¿Campana o cola larga?", r"""
 Observen la **distribución del grado de entrada** (compras por actor) y el
 **CV**. ¿La distribución se parece más a una **campana** (azar) o a una
-**cola larga** (unos pocos concentran)? Justifiquen con la **forma** del
-histograma y el valor del **CV**.
+**cola larga** (unos pocos concentran)? ¿Cuál es el **proceso** que llevó a
+esa distribución? Usen la **forma** del histograma y el valor del **CV** para
+justificar su respuesta.
 """, 120),
 
     "p2": ("I", "2. ¿Por qué está tan desconectada?", r"""
 La red tiene cientos de **componentes** y un **componente gigante** que apenas
-cubre una fracción de los actores; además, la mayoría aparece en **un solo
-trato**. ¿Por qué el mercado de tierra está tan **desconectado**? ¿Qué dice
-esto sobre **cómo se transaba** la propiedad en Cali en esos años?
+cubre una fracción de los actores; además, la mayoría aparece con **sólo una
+transacción**. ¿Por qué el mercado de tierra está tan **desconectado**? ¿Qué
+dice esto sobre **cómo se transaba** la propiedad en Cali en esos años?
 """, 120),
 
     "p3": ("I", "3. Casi sin triángulos", r"""
@@ -85,10 +86,11 @@ de tierra** y sus cifras. ¿Son personas, familias, empresas o instituciones?
 """, 100),
 
     "p5": ("II", "5. ¿Dónde están los intermediarios?", r"""
-La **betweenness** (medida de intermediación) es **≈ 0 para casi todos**:
-prácticamente **no hay brokers**. (a) ¿Por qué? Relaciónenlo con la
-fragmentación de la Parte I. (b) La excepción es quien **compra Y vende**
-mucho: identifíquenlo con sus cifras y expliquen su papel.
+La **betweenness** (centralidad por intermediación) es **≈ 0 para casi
+todos**: prácticamente **no hay brokers**. (a) ¿Por qué? Relacionen este
+hallazgo con la **fragmentación** de la Parte I. (b) La excepción está en
+**quiénes compran Y venden mucho**: identifiquen a esos agentes, con sus
+cifras, y expliquen su papel.
 """, 120),
 
     "p6": ("II", "6. ¿Acumular tierra, área o dinero?", r"""
@@ -112,10 +114,10 @@ otros años. ¿Cómo afecta eso la comparación? ¿Pueden afirmar una tendencia?
 """, 130),
 
     "p9": ("III", "9. ¿Vinculación preferencial?", r"""
-¿Ven indicios de **vinculación preferencial** ("el que ya tiene tierra sigue
-comprando")? Den un **ejemplo concreto** de la red (p. ej. un actor que compra
-repetidamente). **Cuidado**: la cola larga es una **intuición visual**, no una
-prueba estadística de ley de potencia. Redacten con esa cautela.
+¿Ven indicios de **vinculación preferencial** ("prefiero vender a quien ya ha
+comprado antes")? Den un **ejemplo concreto** de la red (p. ej. un actor que
+compra repetidamente). **Cuidado**: la cola larga es una **intuición visual**,
+no una prueba estadística de ley de potencia. Redacten con esa cautela.
 """, 120),
 
     "p10": ("IV", "10. ¿Cómo emergió el espacio urbano de Cali?", r"""
