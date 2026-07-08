@@ -62,7 +62,7 @@ def guardar(punto: str, texto: str, final: bool = False):
     if ok:
         st.toast(f"Guardado ({destino}) ✅")
     else:
-        st.toast(f"Guardado local; Sheets falló: {err}", icon="⚠️")
+        st.toast(f"⚠️ No se pudo guardar: {err}. Reintentá.", icon="⚠️")
 
 
 def punto_ui(clave: str):
@@ -123,8 +123,8 @@ def panel_explorar():
         ta = _tabla_actores_bonita()
         q = st.text_input("🔎 Buscar actor", key="buscar_actor",
                           placeholder="p. ej. Caicedo, Municipio, Royal Bank…")
-        vista = ta[ta["actor"].str.contains(q.strip(), case=False, na=False)] \
-            if q.strip() else ta
+        vista = ta[ta["actor"].str.contains(
+            q.strip(), case=False, na=False, regex=False)] if q.strip() else ta
         st.dataframe(
             vista, hide_index=True, width="stretch", height=460,
             column_config={
@@ -156,9 +156,9 @@ def panel_explorar():
         if q2.strip():
             s = q2.strip()
             vista_tx = dfx[
-                dfx["vendedor"].str.contains(s, case=False, na=False)
-                | dfx["comprador"].str.contains(s, case=False, na=False)
-                | dfx["negocio"].str.contains(s, case=False, na=False)]
+                dfx["vendedor"].str.contains(s, case=False, na=False, regex=False)
+                | dfx["comprador"].str.contains(s, case=False, na=False, regex=False)
+                | dfx["negocio"].str.contains(s, case=False, na=False, regex=False)]
         else:
             vista_tx = dfx
         st.dataframe(
@@ -199,14 +199,15 @@ with st.sidebar:
                 payload = {"integrante1": i1.strip(), "codigo1": c1.strip(),
                            "integrante2": i2.strip(), "codigo2": c2.strip()}
                 ok, err, destino, row = storage.crear_fila_pareja(payload)
-                ss.registrado = True
-                ss.row_index = row
-                ss.identidad = payload
                 if ok:
+                    ss.registrado = True
+                    ss.row_index = row
+                    ss.identidad = payload
                     st.success(f"¡Registrados! Guardando en: {destino}")
+                    st.rerun()
                 else:
-                    st.warning(f"Registrados (local). Sheets: {err}")
-                st.rerun()
+                    st.error(f"No se pudo iniciar el parcial (error de guardado): "
+                             f"{err}. Reintentá en unos segundos.")
     else:
         ident = ss.identidad
         st.success("Registrados ✅")
@@ -380,11 +381,19 @@ with t4:
         st.caption("Al enviar se marca la hora final. Pueden seguir editando "
                    "y guardando puntos individuales después si les queda tiempo.")
         if st.button("📨 Enviar parcial", type="primary"):
-            # re-guarda todos los puntos por si algo quedó sin guardar
+            # Toma el texto VIVO de cada widget: puede no haberse "Guardado" aún.
+            # El valor del text_area vive en ss["ta_pX"], no en ss.respuestas.
+            fallos = []
             for p in textos.PUNTOS:
-                storage.guardar_respuesta(ss.row_index, p,
-                                          ss.respuestas.get(p, ""), final=False)
-            storage.guardar_respuesta(ss.row_index, "p11",
-                                      ss.respuestas.get("p11", ""), final=True)
-            st.success("¡Parcial enviado! Gracias. 🎉")
-            st.balloons()
+                texto = ss.get(f"ta_{p}", ss.respuestas.get(p, ""))
+                ss.respuestas[p] = texto
+                ok, err, _ = storage.guardar_respuesta(
+                    ss.row_index, p, texto, final=(p == "p11"))
+                if not ok:
+                    fallos.append(p)
+            if fallos:
+                st.error("No se pudieron guardar: " + ", ".join(fallos) +
+                         ". Reintentá el envío.")
+            else:
+                st.success("¡Parcial enviado! Gracias. 🎉")
+                st.balloons()

@@ -110,7 +110,12 @@ def _actualizar_celda_local(row_index: int, columna: str, valor: str):
 
 
 def crear_fila_pareja(payload: dict) -> tuple[bool, Optional[str], str, Optional[int]]:
-    """Crea la fila inicial de la pareja. Devuelve (ok, error, destino, row_index)."""
+    """Crea la fila inicial de la pareja. Devuelve (ok, error, destino, row_index).
+
+    En modo Sheets NO se cae a CSV local: el índice de una fila local no es
+    compatible con el de Sheets, y reusarlo después pisaría la fila de otra
+    pareja. Si Sheets falla se devuelve un error honesto para que reintenten.
+    """
     fila = [
         datetime.utcnow().isoformat(timespec="seconds"),
         payload.get("integrante1", ""), payload.get("codigo1", ""),
@@ -123,10 +128,11 @@ def crear_fila_pareja(payload: dict) -> tuple[bool, Optional[str], str, Optional
             ws = _abrir_hoja()
             result = ws.append_row(fila, value_input_option="RAW")
             row = _parse_row_index(result.get("updates", {}).get("updatedRange", ""))
+            if row is None:
+                return False, "No se pudo determinar la fila creada en Sheets", "error", None
             return True, None, "sheets", row
         except Exception as e:
-            row = _guardar_local(fila)
-            return False, f"Error escribiendo a Sheets: {e}", "local", row
+            return False, f"Error escribiendo a Sheets: {e}", "error", None
     row = _guardar_local(fila)
     return True, None, "local", row
 
@@ -151,8 +157,9 @@ def guardar_respuesta(row_index: int, punto: str, texto: str,
                           value_input_option="RAW")
             return True, None, "sheets"
         except Exception as e:
-            _actualizar_celda_local(row_index, columna, texto)
-            return False, f"Error actualizando Sheets: {e}", "local"
+            # Modo Sheets: NO caer a CSV local (índices incompatibles y el
+            # docente lee directo del Sheet). Error honesto para reintentar.
+            return False, f"Error actualizando Sheets: {e}", "error"
     _actualizar_celda_local(row_index, columna, texto)
     if final:
         _actualizar_celda_local(row_index, "timestamp_final",
