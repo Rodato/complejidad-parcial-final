@@ -11,6 +11,39 @@ from lib import storage
 st.set_page_config(page_title="Parcial Final · Redes", page_icon="🏙️",
                    layout="wide", initial_sidebar_state="expanded")
 
+# Pestañas más grandes y visibles (navegación principal del parcial).
+st.markdown("""
+<style>
+[role="tablist"] {
+    gap: 0.35rem !important;
+    border-bottom: 2px solid #e6e6e6;
+    margin-bottom: 0.6rem;
+    flex-wrap: wrap;
+}
+[data-testid="stTab"] {
+    padding: 0.5rem 1.1rem !important;
+    border-radius: 10px 10px 0 0;
+}
+[data-testid="stTab"] p {
+    font-size: 1.35rem !important;
+    font-weight: 700 !important;
+}
+[data-testid="stTab"]:hover {
+    background: #f0f2f6;
+}
+[data-testid="stTab"]:hover p {
+    color: #1c6dd0 !important;
+}
+[data-testid="stTab"][aria-selected="true"] {
+    background: #eaf1fb;
+}
+[data-testid="stTab"][aria-selected="true"] p {
+    color: #1c6dd0 !important;
+    font-weight: 800 !important;
+}
+</style>
+""", unsafe_allow_html=True)
+
 # ---------------------------------------------------------------- estado
 ss = st.session_state
 ss.setdefault("registrado", False)
