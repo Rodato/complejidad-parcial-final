@@ -32,7 +32,9 @@ Sin `secrets.toml`, las respuestas van a `respuestas_local.csv` (gitignoreado).
 ## Arquitectura
 
 ```
-parcial_app.py        # App estudiantes: registro (pareja) + 4 partes (tabs) + envío
+parcial_app.py        # App estudiantes: registro (pareja) + pestaña "🔎 Explorar"
+                      #   (tabla de actores + transacciones, ordenable/buscable,
+                      #   descarga CSV) + 4 partes (tabs) + envío
 dashboard.py          # Panel docente (contraseña) — una ficha por pareja
 construir_datos.py    # DEV: ../data/consolidado + alias_curados -> datos/red_parcial.csv
 datos/red_parcial.csv # Edge list dirigida y LIMPIA (curada). Una fila por par s->b

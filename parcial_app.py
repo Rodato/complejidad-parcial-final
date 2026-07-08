@@ -57,6 +57,98 @@ def actor_stats(nombre_norm: str) -> dict | None:
     return fila.iloc[0].to_dict() if not fila.empty else None
 
 
+def _tabla_actores_bonita():
+    ta = TABLA.copy()
+    ta["actor"] = ta["actor"].map(red.bonito)
+    cols = ["actor", "compras", "ventas", "grado_total",
+            "area_comprada", "valor_comprado", "betweenness"]
+    return ta[cols].sort_values("compras", ascending=False).reset_index(drop=True)
+
+
+def _tabla_transacciones_bonita():
+    dfx = red.cargar_df().copy()
+    dfx = dfx.rename(columns={"source": "vendedor", "target": "comprador"})
+    dfx["vendedor"] = dfx["vendedor"].map(red.bonito)
+    dfx["comprador"] = dfx["comprador"].map(red.bonito)
+    cols = ["registro", "anio", "vendedor", "comprador",
+            "valor", "area", "negocio", "escritura"]
+    return dfx[cols].sort_values("registro").reset_index(drop=True)
+
+
+def panel_explorar():
+    """Vista de consulta: la misma base con que se calculan todas las cifras.
+    Ordenable por columna, con buscador y descarga CSV."""
+    st.subheader("Explorar los datos")
+    st.caption("La **misma base** con la que están calculadas todas las cifras "
+               "del parcial. Hagan clic en el encabezado de una columna para "
+               "**ordenar**, usen el buscador, y **descarguen** si quieren "
+               "verificar por su cuenta. Nombres normalizados (alias curados).")
+
+    sub_act, sub_tx = st.tabs(["👤 Actores", "📄 Transacciones"])
+
+    with sub_act:
+        ta = _tabla_actores_bonita()
+        q = st.text_input("🔎 Buscar actor", key="buscar_actor",
+                          placeholder="p. ej. Caicedo, Municipio, Royal Bank…")
+        vista = ta[ta["actor"].str.contains(q.strip(), case=False, na=False)] \
+            if q.strip() else ta
+        st.dataframe(
+            vista, hide_index=True, width="stretch", height=460,
+            column_config={
+                "actor": st.column_config.TextColumn("Actor", width="large"),
+                "compras": st.column_config.NumberColumn(
+                    "Compras", help="Grado de entrada = tierra acumulada"),
+                "ventas": st.column_config.NumberColumn("Ventas"),
+                "grado_total": st.column_config.NumberColumn("Grado total"),
+                "area_comprada": st.column_config.NumberColumn(
+                    "Área comprada (m²)", format="%.0f"),
+                "valor_comprado": st.column_config.NumberColumn(
+                    "Valor comprado ($)", format="%.0f"),
+                "betweenness": st.column_config.NumberColumn(
+                    "Betweenness", format="%.4f",
+                    help="Intermediación; ≈0 para casi todos"),
+            })
+        st.caption(f"**{len(vista)}** actores" +
+                   (f" (filtrados de {len(ta)})" if q.strip() else ""))
+        st.download_button(
+            "⬇️ Descargar tabla de actores (CSV)",
+            ta.to_csv(index=False).encode("utf-8"),
+            "actores_notaria2.csv", "text/csv", key="dl_actores")
+
+    with sub_tx:
+        dfx = _tabla_transacciones_bonita()
+        q2 = st.text_input(
+            "🔎 Buscar en vendedor / comprador / descripción", key="buscar_tx",
+            placeholder="p. ej. hipoteca, Caicedo, La Charmea…")
+        if q2.strip():
+            s = q2.strip()
+            vista_tx = dfx[
+                dfx["vendedor"].str.contains(s, case=False, na=False)
+                | dfx["comprador"].str.contains(s, case=False, na=False)
+                | dfx["negocio"].str.contains(s, case=False, na=False)]
+        else:
+            vista_tx = dfx
+        st.dataframe(
+            vista_tx, hide_index=True, width="stretch", height=460,
+            column_config={
+                "registro": st.column_config.NumberColumn("N° registro"),
+                "anio": st.column_config.NumberColumn("Año", format="%d"),
+                "vendedor": st.column_config.TextColumn("Vendedor", width="medium"),
+                "comprador": st.column_config.TextColumn("Comprador", width="medium"),
+                "valor": st.column_config.NumberColumn("Valor ($)", format="%.0f"),
+                "area": st.column_config.NumberColumn("Área (m²)", format="%.0f"),
+                "negocio": st.column_config.TextColumn("Descripción", width="large"),
+                "escritura": st.column_config.TextColumn("N° escritura"),
+            })
+        st.caption(f"**{len(vista_tx)}** transacciones" +
+                   (f" (filtradas de {len(dfx)})" if q2.strip() else "") +
+                   " · la flecha va del vendedor → comprador")
+        st.download_button(
+            "⬇️ Descargar transacciones (CSV)",
+            dfx.to_csv(index=False).encode("utf-8"),
+            "transacciones_notaria2.csv", "text/csv", key="dl_tx")
+
+
 # ---------------------------------------------------------------- sidebar
 with st.sidebar:
     st.header("👥 Su pareja")
@@ -98,8 +190,9 @@ with st.sidebar:
 st.title("🕸️ " + textos.TITULO)
 st.markdown(textos.INTRO)
 
-t_intro, t1, t2, t3, t4 = st.tabs(
-    ["📊 La red", "① Topología", "② Actores", "③ Régimen", "④ Interpretación"])
+t_intro, t_expl, t1, t2, t3, t4 = st.tabs(
+    ["📊 La red", "🔎 Explorar", "① Topología", "② Actores", "③ Régimen",
+     "④ Interpretación"])
 
 # --- pestaña panorámica ---
 with t_intro:
@@ -126,6 +219,10 @@ with t_intro:
                "cifras y vecinos. La flecha va del **vendedor → comprador** "
                "(sigue la tierra). Tamaño y color = nº de compras (azul claro "
                "= pocas, rojo = muchas = acumula tierra).")
+
+# --- pestaña explorar ---
+with t_expl:
+    panel_explorar()
 
 # --- Parte I ---
 with t1:
