@@ -23,8 +23,8 @@ dadas, otras las obtienen moviendo controles; todo con anclaje empírico).
 /opt/homebrew/bin/python3.11 -m venv .venv
 source .venv/bin/activate
 pip install -r requirements.txt
-streamlit run parcial_app.py          # app de estudiantes
-streamlit run dashboard.py            # panel docente
+streamlit run parcial_app.py          # app de estudiantes (lo que se despliega)
+streamlit run dashboard.py            # panel docente (opcional, NO se despliega)
 ```
 
 Sin `secrets.toml`, las respuestas van a `respuestas_local.csv` (gitignoreado).
@@ -35,7 +35,8 @@ Sin `secrets.toml`, las respuestas van a `respuestas_local.csv` (gitignoreado).
 parcial_app.py        # App estudiantes: registro (pareja) + pestaña "🔎 Explorar"
                       #   (tabla de actores + transacciones, ordenable/buscable,
                       #   descarga CSV) + 4 partes (tabs) + envío
-dashboard.py          # Panel docente (contraseña) — una ficha por pareja
+dashboard.py          # Panel docente (contraseña) — NO se despliega (jul 2026):
+                      #   se decidió leer las respuestas directo del Google Sheet
 construir_datos.py    # DEV: ../data/consolidado + alias_curados -> datos/red_parcial.csv
 datos/red_parcial.csv # Edge list dirigida y LIMPIA (curada). Una fila por par s->b
                       # con atributos del registro (registro, anio, valor, area, ...)
@@ -93,7 +94,9 @@ selector de grupo). NO reintroducir un selector de grupo ni preguntas por grupo.
 - Service account `detective-redes@complejidad-496215` (ya tiene permiso).
 - **Una fila por pareja.** Columnas: `timestamp, integrante1, codigo1,
   integrante2, codigo2, grupo, resp_p1..resp_p11, timestamp_final`.
-- Dashboard docente protegido por `secrets["dashboard"]["password"]`.
+- **Calificación**: se leen las respuestas **directo en el Google Sheet** (pestaña
+  `parcial_final`). El `dashboard.py` existe pero **no se usa/despliega** (decisión
+  jul 2026); si se reactivara, requiere `secrets["dashboard"]["password"]`.
 
 ## Pitfalls (heredados del Taller 4 — respetar)
 
@@ -111,7 +114,13 @@ selector de grupo). NO reintroducir un selector de grupo ni preguntas por grupo.
   cambia lo que se DIBUJA; las métricas usan siempre la red completa.
 - Verificación visual del canvas: Playwright con el chromium ya cacheado
   (`~/Library/Caches/ms-playwright/chromium_headless_shell-1223/...`), screenshot
-  de `localhost:8501` (el AppTest NO ejecuta el JS del iframe).
+  de `localhost:8501` (el AppTest NO ejecuta el JS del iframe). Lanzar el binario
+  con `executable_path=.../chrome-headless-shell` (el `playwright install` por
+  defecto no está); ver `/tmp/shot_*.py` de referencia.
+- **CSS de las pestañas** (se agrandaron en `parcial_app.py`): el selector válido
+  en esta versión de Streamlit es **`[data-testid="stTab"]`** (el viejo
+  `[data-baseweb="tab"]` YA NO existe → el CSS queda silenciosamente sin efecto).
+  El label es un `<p>` dentro; subir `font-size`/`font-weight` con `!important`.
 
 ## Verificación
 
@@ -119,11 +128,22 @@ selector de grupo). NO reintroducir un selector de grupo ni preguntas por grupo.
   flujo: registro (pareja) → guardar punto → slider de años → radio de métrica →
   enviar → dashboard. Correr ese smoke test antes de tocar la UI.
 
-## Deploy (pendiente de decidir con el usuario)
+## Deploy
 
-- Streamlit Cloud, dos entry points (`parcial_app.py` y `dashboard.py`) desde el
-  mismo repo, como el Taller 3. **Falta**: crear repo (¿`Rodato`?), subir secrets
-  (mismas keys del Taller 4 + `[dashboard] password`, `worksheet="parcial_final"`).
+- **Repo creado (jul 2026)**: `Rodato/complejidad-parcial-final` (**público**,
+  branch `main`). GitHub conectado → push a `main` redespliega.
+- **Una sola app**: se despliega **solo `parcial_app.py`** (main file path
+  `parcial_app.py`). Se decidió **NO** desplegar el dashboard docente; las
+  respuestas se leen directo del Google Sheet.
+- **Secrets ya generados en local**: `.streamlit/secrets.toml` (gitignoreado) se
+  armó desde la llave del service account del Taller 3
+  (`../3. Inmobilliario/complejidad-496215-*.json`), con solo `[gcp_service_account]`
+  + `[sheets]` (`worksheet="parcial_final"`). **Sin `[dashboard]`** (no hay
+  password porque no se despliega el panel). Ese mismo bloque se pega en
+  Streamlit Cloud → Settings → Secrets.
+- **Falta (paso manual del usuario)**: conectar la app en share.streamlit.io y
+  pegar los secrets. La pestaña `parcial_final` del Sheet se crea sola al primer
+  envío.
 
 ## Autoría
 
