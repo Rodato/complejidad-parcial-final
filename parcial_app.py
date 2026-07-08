@@ -8,7 +8,7 @@ import streamlit as st
 from lib import red, textos, viz, canvas
 from lib import storage
 
-st.set_page_config(page_title="Parcial Final · Redes", page_icon="🕸️",
+st.set_page_config(page_title="Parcial Final · Redes", page_icon="🏙️",
                    layout="wide", initial_sidebar_state="expanded")
 
 # ---------------------------------------------------------------- estado
@@ -187,7 +187,7 @@ with st.sidebar:
 
 
 # ---------------------------------------------------------------- cuerpo
-st.title("🕸️ " + textos.TITULO)
+st.title(textos.TITULO)
 st.markdown(textos.INTRO)
 
 t_intro, t_expl, t1, t2, t3, t4 = st.tabs(
