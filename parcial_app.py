@@ -50,6 +50,7 @@ ss.setdefault("registrado", False)
 ss.setdefault("row_index", None)
 ss.setdefault("identidad", {})
 ss.setdefault("respuestas", {})
+ss.setdefault("enviado", False)
 
 RES = red.resumen(anio_hasta=None)          # red completa (cacheada)
 TABLA = RES["tabla"]
@@ -192,28 +193,54 @@ with st.sidebar:
             i2 = st.text_input("Integrante 2 · nombre (opcional)")
             c2 = st.text_input("Integrante 2 · código (opcional)")
             enviar = st.form_submit_button("Iniciar parcial", type="primary")
+        st.caption("¿Ya habían empezado en otra sesión? Ingresen con el "
+                   "**mismo código** y retomarán lo que llevaban guardado.")
         if enviar:
             if not i1.strip() or not c1.strip():
                 st.error("Al menos el Integrante 1 (nombre y código) es obligatorio.")
             else:
                 payload = {"integrante1": i1.strip(), "codigo1": c1.strip(),
                            "integrante2": i2.strip(), "codigo2": c2.strip()}
-                ok, err, destino, row = storage.crear_fila_pareja(payload)
-                if ok:
+                ok_b, err_b, hallazgo = storage.buscar_fila_pareja(
+                    payload["codigo1"], payload["codigo2"])
+                if not ok_b:
+                    st.error(f"No se pudo verificar si ya habían empezado: "
+                             f"{err_b}. Reintentá en unos segundos.")
+                elif hallazgo:
+                    # Retomar: reusar la fila y recargar lo ya guardado.
+                    previa = hallazgo["identidad"]
+                    identidad = storage.fusionar_identidad(previa, payload)
+                    if identidad != previa:
+                        storage.actualizar_identidad(hallazgo["row_index"],
+                                                     identidad)
                     ss.registrado = True
-                    ss.row_index = row
-                    ss.identidad = payload
-                    st.success(f"¡Registrados! Guardando en: {destino}")
+                    ss.row_index = hallazgo["row_index"]
+                    ss.identidad = identidad
+                    ss.respuestas = hallazgo["respuestas"]
+                    ss.enviado = hallazgo["enviado"]
+                    n = len(hallazgo["respuestas"])
+                    st.success(f"¡De nuevo por acá! Retomamos su avance: "
+                               f"{n} punto(s) ya guardado(s).")
                     st.rerun()
                 else:
-                    st.error(f"No se pudo iniciar el parcial (error de guardado): "
-                             f"{err}. Reintentá en unos segundos.")
+                    ok, err, destino, row = storage.crear_fila_pareja(payload)
+                    if ok:
+                        ss.registrado = True
+                        ss.row_index = row
+                        ss.identidad = payload
+                        st.success(f"¡Registrados! Guardando en: {destino}")
+                        st.rerun()
+                    else:
+                        st.error(f"No se pudo iniciar el parcial (error de "
+                                 f"guardado): {err}. Reintentá en unos segundos.")
     else:
         ident = ss.identidad
         st.success("Registrados ✅")
         st.write(f"**{ident.get('integrante1','')}**")
         if ident.get("integrante2"):
             st.write(f"**{ident.get('integrante2','')}**")
+        if ss.enviado:
+            st.caption("Ya enviaron el parcial ✅ (pueden seguir editando).")
         st.caption(f"Almacenamiento: {storage.modo_almacenamiento()}")
 
     st.divider()
@@ -395,5 +422,6 @@ with t4:
                 st.error("No se pudieron guardar: " + ", ".join(fallos) +
                          ". Reintentá el envío.")
             else:
+                ss.enviado = True
                 st.success("¡Parcial enviado! Gracias. 🎉")
                 st.balloons()

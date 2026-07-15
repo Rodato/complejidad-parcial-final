@@ -109,6 +109,108 @@ def _actualizar_celda_local(row_index: int, columna: str, valor: str):
     df.to_csv(ARCHIVO_LOCAL, index=False)
 
 
+def _normalizar_codigo(c) -> str:
+    return str(c or "").strip().lower()
+
+
+def _fila_a_hallazgo(fila: list, row_index: int) -> dict:
+    reg = dict(zip(COLUMNAS, [str(v) for v in fila] + [""] * (len(COLUMNAS) - len(fila))))
+    return {
+        "row_index": row_index,
+        "identidad": {k: reg[k] for k in
+                      ("integrante1", "codigo1", "integrante2", "codigo2")},
+        "respuestas": {p: reg[f"resp_{p}"] for p in PUNTOS if reg[f"resp_{p}"].strip()},
+        "enviado": bool(reg["timestamp_final"].strip()),
+    }
+
+
+def buscar_fila_pareja(codigo1: str, codigo2: str = "") -> tuple[bool, Optional[str], Optional[dict]]:
+    """Busca la fila más reciente cuya pareja incluya alguno de los códigos.
+
+    Permite RETOMAR un parcial empezado en otra sesión/día: se reusa la fila
+    y se recargan las respuestas ya guardadas. Devuelve (ok, error, hallazgo);
+    hallazgo es None si no hay coincidencia. En modo Sheets un error de lectura
+    NO se traga (fail-closed): crear una fila nueva sin haber podido buscar
+    duplicaría a la pareja.
+    """
+    codigos = {_normalizar_codigo(codigo1), _normalizar_codigo(codigo2)} - {""}
+    if not codigos:
+        return True, None, None
+    if _tiene_credenciales_google():
+        try:
+            ws = _abrir_hoja()
+            valores = ws.get_all_values()
+        except Exception as e:
+            return False, f"Error leyendo Sheets: {e}", None
+        filas = valores[1:]
+    elif ARCHIVO_LOCAL.exists():
+        df = pd.read_csv(ARCHIVO_LOCAL, dtype=str, keep_default_na=False,
+                         na_filter=False)
+        filas = df.reindex(columns=COLUMNAS, fill_value="").values.tolist()
+    else:
+        return True, None, None
+
+    i_c1, i_c2 = COLUMNAS.index("codigo1"), COLUMNAS.index("codigo2")
+    for i in range(len(filas) - 1, -1, -1):
+        fila = filas[i]
+        de_la_fila = {_normalizar_codigo(fila[j]) for j in (i_c1, i_c2)
+                      if j < len(fila)} - {""}
+        if codigos & de_la_fila:
+            return True, None, _fila_a_hallazgo(fila, i + 2)
+    return True, None, None
+
+
+def fusionar_identidad(previa: dict, payload: dict) -> dict:
+    """Une la identidad guardada en la fila con la recién tecleada al retomar.
+
+    La fila guardada MANDA (no se pierde un integrante porque el otro entró
+    solo el día 2); lo tecleado solo agrega: un integrante nuevo si hay cupo,
+    o el nombre que faltaba junto a un código ya conocido.
+    """
+    miembros: list[list[str]] = []
+    for kn, kc in (("integrante1", "codigo1"), ("integrante2", "codigo2")):
+        n = str(previa.get(kn, "")).strip()
+        c = str(previa.get(kc, "")).strip()
+        if n or c:
+            miembros.append([n, c])
+    for kn, kc in (("integrante1", "codigo1"), ("integrante2", "codigo2")):
+        n = str(payload.get(kn, "")).strip()
+        c = str(payload.get(kc, "")).strip()
+        if not (n or c):
+            continue
+        conocido = next((m for m in miembros if c and
+                         _normalizar_codigo(m[1]) == _normalizar_codigo(c)), None)
+        if conocido:
+            if n and not conocido[0]:
+                conocido[0] = n
+        elif len(miembros) < 2:
+            miembros.append([n, c])
+    miembros += [["", ""]] * (2 - len(miembros))
+    return {"integrante1": miembros[0][0], "codigo1": miembros[0][1],
+            "integrante2": miembros[1][0], "codigo2": miembros[1][1]}
+
+
+def actualizar_identidad(row_index: int, identidad: dict) -> None:
+    """Reescribe integrante1..codigo2 de la fila (p. ej. si se sumó la pareja).
+    Best-effort: si falla no se interrumpe el flujo (la identidad vieja sigue)."""
+    valores = [[identidad.get("integrante1", ""), identidad.get("codigo1", ""),
+                identidad.get("integrante2", ""), identidad.get("codigo2", "")]]
+    try:
+        if _tiene_credenciales_google():
+            ws = _abrir_hoja()
+            c_ini = _column_letter(COLUMNAS.index("integrante1") + 1)
+            c_fin = _column_letter(COLUMNAS.index("codigo2") + 1)
+            ws.update(values=valores,
+                      range_name=f"{c_ini}{row_index}:{c_fin}{row_index}",
+                      value_input_option="RAW")
+        else:
+            for col, val in zip(("integrante1", "codigo1", "integrante2", "codigo2"),
+                                valores[0]):
+                _actualizar_celda_local(row_index, col, val)
+    except Exception:
+        pass
+
+
 def crear_fila_pareja(payload: dict) -> tuple[bool, Optional[str], str, Optional[int]]:
     """Crea la fila inicial de la pareja. Devuelve (ok, error, destino, row_index).
 

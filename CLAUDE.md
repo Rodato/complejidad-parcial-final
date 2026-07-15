@@ -94,6 +94,16 @@ selector de grupo). NO reintroducir un selector de grupo ni preguntas por grupo.
 - Service account `detective-redes@complejidad-496215` (ya tiene permiso).
 - **Una fila por pareja.** Columnas: `timestamp, integrante1, codigo1,
   integrante2, codigo2, grupo, resp_p1..resp_p11, timestamp_final`.
+- **Reanudación entre sesiones (jul 2026)**: al registrarse, la app busca en la
+  hoja la fila más reciente cuyo `codigo1`/`codigo2` coincida con alguno de los
+  códigos tecleados (`storage.buscar_fila_pareja`). Si existe, **reusa esa fila**
+  y recarga `resp_p1..p11` en los text_area (nada de filas duplicadas); si el
+  día 2 entra un solo integrante o se suma la pareja, la identidad se fusiona
+  sin perder a nadie (`fusionar_identidad`: la fila guardada manda, lo tecleado
+  solo agrega). La búsqueda es fail-closed en modo Sheets: si no puede leer, NO
+  crea fila nueva (error honesto para reintentar). Lo NO persistente entre
+  sesiones: solo el texto tecleado y aún no guardado (los estudiantes deben
+  darle 💾 Guardar; el botón Enviar igual guarda todo lo vivo).
 - **Calificación**: se leen las respuestas **directo en el Google Sheet** (pestaña
   `parcial_final`). El `dashboard.py` existe pero **no se usa/despliega** (decisión
   jul 2026); si se reactivara, requiere `secrets["dashboard"]["password"]`.
